@@ -1,0 +1,41 @@
+.loading {
+  display: flex; align-items: center; justify-content: center;
+  height: 100dvh; color: #6a6a82;
+  font-family: 'Cinzel', serif; letter-spacing: 4px; font-size: 11px;
+}
+.home {
+  min-height: 100dvh; background: #0a0a0f;
+  padding: 60px 24px 40px; max-width: 430px; margin: 0 auto;
+}
+.home-header { margin-bottom: 48px; }
+.home-kicker {
+  display: block; font-family: 'Cinzel', serif;
+  font-size: 10px; letter-spacing: 5px; color: #e8c46a;
+  text-transform: uppercase; margin-bottom: 8px;
+}
+.home-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 42px; font-weight: 300; color: #f0ece0; font-style: italic;
+}
+.home-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.app-tile {
+  background: #151520; border: 1px solid #3a3a55; border-radius: 16px;
+  padding: 28px 16px; display: flex; flex-direction: column;
+  align-items: center; gap: 12px; position: relative;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.app-tile:hover, .app-tile:focus {
+  border-color: var(--tile-color); outline: none;
+  box-shadow: 0 0 20px rgba(0,0,0,.4);
+}
+.app-tile-icon { font-size: 28px; color: var(--tile-color); }
+.app-tile-label {
+  font-family: 'Cinzel', serif; font-size: 10px;
+  letter-spacing: 2px; text-transform: uppercase; color: #f0ece0; text-align: center;
+}
+.app-tile--soon { opacity: 0.5; cursor: default; }
+.app-tile-soon {
+  position: absolute; top: 8px; right: 8px;
+  font-family: 'Cinzel', serif; font-size: 7px; letter-spacing: 1px;
+  color: #6a6a82; border: 1px solid #3a3a55; border-radius: 4px; padding: 2px 4px;
+}
