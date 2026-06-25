@@ -4,9 +4,26 @@ const RYTHMES = [{ id: 1, label: '1 ch/j' }, { id: 3, label: '3 ch/j' }, { id: 0
 
 export function Bi5Plans({ bible, setBible }) {
   const [rythme, setRythme] = useState(1)
+  const [showPicker, setShowPicker] = useState(false)
 
   const enCours = bible.plans.filter((_, i) => i < 2)
   const aVenir = bible.plans.slice(2)
+
+  function addPlan(bookId) {
+    const book = bible.books.find(b => b.id === bookId)
+    if (!book) return
+    setBible(prev => ({
+      ...prev,
+      plans: [...prev.plans, {
+        id: Date.now().toString(),
+        livreId: bookId,
+        jourActuel: 1,
+        total: book.totalChapitres,
+        type: 'fixe'
+      }]
+    }))
+    setShowPicker(false)
+  }
 
   function moveUp(idx) {
     if (idx <= 2) return
@@ -26,14 +43,19 @@ export function Bi5Plans({ bible, setBible }) {
     })
   }
 
+  const alreadyInPlans = new Set(bible.plans.map(p => p.livreId))
+  const availableBooks = bible.books.filter(b => !alreadyInPlans.has(b.id))
+
   return (
     <>
-      <button className="btn-outline-dashed">+ CHOISIR UN LIVRE À LIRE</button>
+      <button className="btn-outline-dashed" onClick={() => setShowPicker(true)}>
+        + CHOISIR UN LIVRE À LIRE
+      </button>
 
       {enCours.length > 0 && (
         <div>
           <div className="kicker" style={{ marginBottom: 10 }}>EN COURS</div>
-          {enCours.map((plan, i) => {
+          {enCours.map((plan) => {
             const book = bible.books.find(b => b.id === plan.livreId)
             const pct = Math.round((plan.jourActuel / plan.total) * 100)
             return (
@@ -64,7 +86,7 @@ export function Bi5Plans({ bible, setBible }) {
             return (
               <div key={plan.id} style={{ display: 'flex', alignItems: 'center',
                 gap: 12, padding: '10px 0', borderBottom: '1px solid #3a3a55' }}>
-                <span style={{ color: '#6a6a82', fontSize: 18, cursor: 'grab' }}>⠿</span>
+                <span style={{ color: '#6a6a82', fontSize: 18 }}>⠿</span>
                 <span style={{ flex: 1, color: '#f0ece0', fontSize: 15 }}>{book?.nom}</span>
                 <span style={{ color: '#6a6a82', fontSize: 12 }}>{book?.totalChapitres} ch.</span>
                 <div style={{ display: 'flex', gap: 4 }}>
@@ -83,7 +105,6 @@ export function Bi5Plans({ bible, setBible }) {
         </div>
       )}
 
-      {/* Sélecteur de rythme */}
       <div>
         <div className="kicker" style={{ marginBottom: 10 }}>RYTHME</div>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -96,6 +117,40 @@ export function Bi5Plans({ bible, setBible }) {
           ))}
         </div>
       </div>
+
+      {showPicker && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 100,
+          display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}
+          onClick={() => setShowPicker(false)}>
+          <div style={{ background: '#151520', borderRadius: '20px 20px 0 0',
+            maxHeight: '72vh', display: 'flex', flexDirection: 'column' }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ padding: '16px 20px 12px', borderBottom: '1px solid #3a3a55',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              flexShrink: 0 }}>
+              <span className="kicker">CHOISIR UN LIVRE</span>
+              <button style={{ color: '#a0a0b8', fontSize: 22, lineHeight: 1 }}
+                onClick={() => setShowPicker(false)}>×</button>
+            </div>
+            <div style={{ overflowY: 'auto', flex: 1 }}>
+              {availableBooks.map(b => (
+                <div key={b.id} onClick={() => addPlan(b.id)}
+                  style={{ padding: '14px 20px', borderBottom: '1px solid #1e1e2e',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    cursor: 'pointer' }}>
+                  <span style={{ color: '#f0ece0', fontSize: 15 }}>{b.nom}</span>
+                  <span style={{ color: '#6a6a82', fontSize: 12 }}>{b.totalChapitres} ch.</span>
+                </div>
+              ))}
+              {availableBooks.length === 0 && (
+                <div style={{ color: '#6a6a82', fontSize: 13, padding: 24, textAlign: 'center' }}>
+                  Tous les livres sont déjà dans tes plans.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

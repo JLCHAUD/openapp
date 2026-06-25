@@ -47,7 +47,7 @@ export function T2Habits({ tasks, setTasks }) {
     <>
       {/* En-tête jours */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr repeat(7, 24px)',
-        gap: 6, alignItems: 'center', padding: '0 4px', marginBottom: 8 }}>
+        gap: 6, alignItems: 'center', padding: '0 16px', marginBottom: 8 }}>
         <span />
         {DAYS.map((d, i) => (
           <span key={i} style={{ fontFamily: 'Cinzel', fontSize: 9,
@@ -85,8 +85,9 @@ export function T2Habits({ tasks, setTasks }) {
 
       <input
         placeholder="+ Nouvelle habitude…"
-        style={{ background: 'none', border: '1px dashed #3a3a55', borderRadius: 10,
-          padding: '10px 14px', color: '#a0a0b8', fontSize: 14, width: '100%', outline: 'none' }}
+        style={{ background: 'none', border: '1.5px dashed #5a5a82', borderRadius: 10,
+          padding: '10px 14px', color: '#a0a0b8', fontSize: 14, width: '100%',
+          outline: 'none', boxSizing: 'border-box' }}
         onKeyDown={e => { if (e.key === 'Enter') { addHabit(e.target.value); e.target.value = '' } }}
       />
     </>
