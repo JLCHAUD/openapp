@@ -1,13 +1,12 @@
 import { useState } from 'react'
-
-const RYTHMES = [{ id: 1, label: '1 ch/j' }, { id: 3, label: '3 ch/j' }, { id: 0, label: 'Libre' }]
+import { todayISO, calcStreak } from '../../tokens.js'
 
 export function Bi5Plans({ bible, setBible }) {
-  const [rythme, setRythme] = useState(1)
   const [showPicker, setShowPicker] = useState(false)
 
-  const enCours = bible.plans.filter((_, i) => i < 2)
-  const aVenir = bible.plans.slice(2)
+  const enCours  = bible.plans.filter(p => (p.statut ?? 'cours') === 'cours')
+  const enAttente = bible.plans.filter(p => p.statut === 'attente')
+  const termines  = bible.plans.filter(p => p.statut === 'termine')
 
   function addPlan(bookId) {
     const book = bible.books.find(b => b.id === bookId)
@@ -17,6 +16,7 @@ export function Bi5Plans({ bible, setBible }) {
       plans: [...prev.plans, {
         id: Date.now().toString(),
         livreId: bookId,
+        statut: 'attente',
         jourActuel: 1,
         total: book.totalChapitres,
         type: 'fixe'
@@ -25,22 +25,41 @@ export function Bi5Plans({ bible, setBible }) {
     setShowPicker(false)
   }
 
-  function moveUp(idx) {
-    if (idx <= 2) return
+  function commencer(planId) {
+    setBible(prev => ({
+      ...prev,
+      plans: prev.plans.map(p =>
+        p.id === planId ? { ...p, statut: 'cours', jourActuel: 1 } : p
+      )
+    }))
+  }
+
+  function marquerChapitreL(planId) {
+    const today = todayISO()
     setBible(prev => {
-      const plans = [...prev.plans]
-      ;[plans[idx - 1], plans[idx]] = [plans[idx], plans[idx - 1]]
-      return { ...prev, plans }
+      const plan = prev.plans.find(p => p.id === planId)
+      if (!plan) return prev
+      const nextJour = plan.jourActuel + 1
+      const estTermine = nextJour > plan.total
+      const newStreak = prev.lastReadDate === today
+        ? prev.streak
+        : calcStreak(prev.lastReadDate, prev.streak)
+      const updatedBooks = prev.books.map(b =>
+        b.id === plan.livreId && !b.chapitresLus.includes(plan.jourActuel)
+          ? { ...b, chapitresLus: [...b.chapitresLus, plan.jourActuel] }
+          : b
+      )
+      const updatedPlans = prev.plans.map(p =>
+        p.id === planId
+          ? { ...p, jourActuel: Math.min(nextJour, p.total + 1), statut: estTermine ? 'termine' : p.statut }
+          : p
+      )
+      return { ...prev, books: updatedBooks, plans: updatedPlans, streak: newStreak, lastReadDate: today }
     })
   }
 
-  function moveDown(idx) {
-    setBible(prev => {
-      const plans = [...prev.plans]
-      if (idx >= plans.length - 1) return prev
-      ;[plans[idx], plans[idx + 1]] = [plans[idx + 1], plans[idx]]
-      return { ...prev, plans }
-    })
+  function retirerPlan(planId) {
+    setBible(prev => ({ ...prev, plans: prev.plans.filter(p => p.id !== planId) }))
   }
 
   const alreadyInPlans = new Set(bible.plans.map(p => p.livreId))
@@ -49,75 +68,107 @@ export function Bi5Plans({ bible, setBible }) {
   return (
     <>
       <button className="btn-outline-dashed" onClick={() => setShowPicker(true)}>
-        + CHOISIR UN LIVRE À LIRE
+        + AJOUTER UN LIVRE À LIRE
       </button>
 
+      {/* EN COURS */}
       {enCours.length > 0 && (
-        <div>
-          <div className="kicker" style={{ marginBottom: 10 }}>EN COURS</div>
-          {enCours.map((plan) => {
+        <>
+          <div className="kicker">EN COURS</div>
+          {enCours.map(plan => {
             const book = bible.books.find(b => b.id === plan.livreId)
-            const pct = Math.round((plan.jourActuel / plan.total) * 100)
+            const pct = Math.min(Math.round(((plan.jourActuel - 1) / plan.total) * 100), 100)
             return (
-              <div key={plan.id} className="card" style={{ marginBottom: 8 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <div style={{ fontFamily: 'Cormorant Garamond', fontSize: 18, color: '#f0ece0' }}>
-                    {book?.nom}
+              <div key={plan.id} className="card card--gold">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                  <div>
+                    <div style={{ fontFamily: 'Cormorant Garamond', fontSize: 20, fontWeight: 400, color: '#f0ece0' }}>
+                      {book?.nom}
+                    </div>
+                    <div style={{ fontSize: 13, color: '#a0a0b8', marginTop: 2 }}>
+                      Chapitre {plan.jourActuel} / {plan.total}
+                    </div>
                   </div>
-                  <div className="kicker">
-                    {plan.type === 'fixe' ? `JOUR ${plan.jourActuel}/${plan.total}` : 'LIBRE'}
-                  </div>
+                  <button onClick={() => retirerPlan(plan.id)}
+                    style={{ color: '#6a6a82', fontSize: 18, lineHeight: 1, padding: '0 4px' }}>×</button>
                 </div>
-                <div className="progress-bar-track">
+                <div className="progress-bar-track" style={{ marginBottom: 14 }}>
                   <div className="progress-bar-fill" style={{ width: `${pct}%` }} />
                 </div>
+                <button className="btn-gold" onClick={() => marquerChapitreL(plan.id)}>
+                  ✓ CHAPITRE {plan.jourActuel} LU
+                </button>
               </div>
             )
           })}
-        </div>
+        </>
       )}
 
-      {aVenir.length > 0 && (
-        <div>
-          <div className="kicker" style={{ marginBottom: 10 }}>À VENIR</div>
-          {aVenir.map((plan, relIdx) => {
-            const absIdx = relIdx + 2
-            const book = bible.books.find(b => b.id === plan.livreId)
-            return (
-              <div key={plan.id} style={{ display: 'flex', alignItems: 'center',
-                gap: 12, padding: '10px 0', borderBottom: '1px solid #3a3a55' }}>
-                <span style={{ color: '#6a6a82', fontSize: 18 }}>⠿</span>
-                <span style={{ flex: 1, color: '#f0ece0', fontSize: 15 }}>{book?.nom}</span>
-                <span style={{ color: '#6a6a82', fontSize: 12 }}>{book?.totalChapitres} ch.</span>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  <button className="btn-sm" onClick={() => moveUp(absIdx)}>↑</button>
-                  <button className="btn-sm" onClick={() => moveDown(absIdx)}>↓</button>
+      {/* FILE D'ATTENTE */}
+      {enAttente.length > 0 && (
+        <>
+          <div className="kicker">FILE D'ATTENTE</div>
+          <div className="card">
+            {enAttente.map((plan, idx) => {
+              const book = bible.books.find(b => b.id === plan.livreId)
+              return (
+                <div key={plan.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '12px 0',
+                  borderBottom: idx < enAttente.length - 1 ? '1px solid #2a2a3f' : 'none'
+                }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: 'Cormorant Garamond', fontSize: 17, fontWeight: 400, color: '#f0ece0' }}>
+                      {book?.nom}
+                    </div>
+                    <div style={{ fontSize: 12, color: '#6a6a82', marginTop: 2 }}>
+                      {book?.totalChapitres} chapitres
+                    </div>
+                  </div>
+                  <button className="btn-sm" onClick={() => commencer(plan.id)}
+                    style={{ color: '#e8c46a', borderColor: '#e8c46a' }}>
+                    ▶ Commencer
+                  </button>
+                  <button onClick={() => retirerPlan(plan.id)}
+                    style={{ color: '#6a6a82', fontSize: 18, lineHeight: 1 }}>×</button>
                 </div>
-              </div>
-            )
-          })}
-        </div>
+              )
+            })}
+          </div>
+        </>
+      )}
+
+      {/* TERMINÉS */}
+      {termines.length > 0 && (
+        <>
+          <div className="kicker">TERMINÉS</div>
+          <div className="card">
+            {termines.map((plan, idx) => {
+              const book = bible.books.find(b => b.id === plan.livreId)
+              return (
+                <div key={plan.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0',
+                  borderBottom: idx < termines.length - 1 ? '1px solid #2a2a3f' : 'none'
+                }}>
+                  <span style={{ color: '#4caf82', fontSize: 16 }}>✓</span>
+                  <span style={{ flex: 1, fontFamily: 'Cormorant Garamond', fontSize: 17,
+                    fontWeight: 400, color: '#a0a0b8' }}>{book?.nom}</span>
+                  <button onClick={() => retirerPlan(plan.id)}
+                    style={{ color: '#6a6a82', fontSize: 18, lineHeight: 1 }}>×</button>
+                </div>
+              )
+            })}
+          </div>
+        </>
       )}
 
       {bible.plans.length === 0 && (
-        <div style={{ textAlign: 'center', color: '#6a6a82', fontSize: 13, padding: 24 }}>
-          Aucun plan pour l'instant.<br />Ajoute un livre ci-dessus.
+        <div style={{ textAlign: 'center', color: '#6a6a82', fontSize: 13, padding: 32 }}>
+          Aucun livre dans ta liste.<br />Ajoute-en un ci-dessus.
         </div>
       )}
 
-      <div>
-        <div className="kicker" style={{ marginBottom: 10 }}>RYTHME</div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {RYTHMES.map(r => (
-            <button key={r.id} className="btn-sm"
-              style={rythme === r.id ? { color: '#e8c46a', borderColor: '#e8c46a' } : {}}
-              onClick={() => setRythme(r.id)}>
-              {r.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
+      {/* Book picker overlay */}
       {showPicker && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 100,
           display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}
@@ -126,8 +177,7 @@ export function Bi5Plans({ bible, setBible }) {
             maxHeight: '72vh', display: 'flex', flexDirection: 'column' }}
             onClick={e => e.stopPropagation()}>
             <div style={{ padding: '16px 20px 12px', borderBottom: '1px solid #3a3a55',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              flexShrink: 0 }}>
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
               <span className="kicker">CHOISIR UN LIVRE</span>
               <button style={{ color: '#a0a0b8', fontSize: 22, lineHeight: 1 }}
                 onClick={() => setShowPicker(false)}>×</button>
@@ -138,13 +188,15 @@ export function Bi5Plans({ bible, setBible }) {
                   style={{ padding: '14px 20px', borderBottom: '1px solid #1e1e2e',
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     cursor: 'pointer' }}>
-                  <span style={{ color: '#f0ece0', fontSize: 15 }}>{b.nom}</span>
+                  <span style={{ color: '#f0ece0', fontSize: 16, fontFamily: 'Cormorant Garamond', fontWeight: 400 }}>
+                    {b.nom}
+                  </span>
                   <span style={{ color: '#6a6a82', fontSize: 12 }}>{b.totalChapitres} ch.</span>
                 </div>
               ))}
               {availableBooks.length === 0 && (
                 <div style={{ color: '#6a6a82', fontSize: 13, padding: 24, textAlign: 'center' }}>
-                  Tous les livres sont déjà dans tes plans.
+                  Tous les livres sont déjà dans ta liste.
                 </div>
               )}
             </div>

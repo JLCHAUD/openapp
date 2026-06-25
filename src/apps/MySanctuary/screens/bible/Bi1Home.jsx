@@ -7,8 +7,8 @@ export function Bi1Home({ bible, setBible, navigate }) {
   const percent = Math.round((chapitresLus / totalChapitres) * 100)
   const streak = calcStreak(bible.lastReadDate, bible.streak)
 
-  const planEnCours = bible.plans[0] ?? null
-  const planParallele = bible.plans[1] ?? null
+  const planEnCours = bible.plans.find(p => (p.statut ?? 'cours') === 'cours') ?? null
+  const planParallele = bible.plans.filter(p => (p.statut ?? 'cours') === 'cours')[1] ?? null
 
   function marquerLu() {
     if (!planEnCours) return
@@ -28,8 +28,11 @@ export function Bi1Home({ bible, setBible, navigate }) {
           ? { ...b, chapitresLus: [...b.chapitresLus, nextChapitre] }
           : b
       )
-      const updatedPlans = prev.plans.map((p, i) =>
-        i === 0 ? { ...p, jourActuel: p.jourActuel + 1 } : p
+      const nextJour = plan.jourActuel + 1
+      const updatedPlans = prev.plans.map(p =>
+        p.id === plan.id
+          ? { ...p, jourActuel: Math.min(nextJour, p.total + 1), statut: nextJour > p.total ? 'termine' : p.statut }
+          : p
       )
       return { ...prev, books: updatedBooks, plans: updatedPlans, streak: newStreak, lastReadDate: today }
     })

@@ -22,16 +22,16 @@
 
 /* === TYPOGRAPHIE === */
 .kicker {
-  font-family: 'Cinzel', serif; font-size: 9px;
-  letter-spacing: 4px; color: var(--gold); text-transform: uppercase;
+  font-family: 'Cinzel', serif; font-size: 10px; font-weight: 500;
+  letter-spacing: 3px; color: var(--gold); text-transform: uppercase;
 }
 .title-serif {
-  font-family: 'Cormorant Garamond', serif; font-weight: 300;
+  font-family: 'Cormorant Garamond', serif; font-weight: 400;
   color: var(--text-primary);
 }
 .big-number {
   font-family: 'Cormorant Garamond', serif;
-  font-size: 54px; font-weight: 300; color: var(--gold); line-height: 1;
+  font-size: 54px; font-weight: 400; color: var(--gold); line-height: 1;
 }
 
 /* === CARDS === */
@@ -56,19 +56,19 @@
 .btn-gold {
   background: var(--gold-gradient); color: var(--text-on-gold);
   border-radius: 10px; padding: 12px 20px;
-  font-family: 'Cinzel', serif; font-size: 11px;
+  font-family: 'Cinzel', serif; font-size: 11px; font-weight: 600;
   letter-spacing: 2px; width: 100%;
 }
 .btn-outline-dashed {
   border: 1.5px dashed #5a5a82; border-radius: var(--radius-card);
   color: var(--text-secondary); padding: 14px 16px;
-  font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 2px;
+  font-family: 'Cinzel', serif; font-size: 11px; font-weight: 500; letter-spacing: 2px;
   width: 100%; text-transform: uppercase;
 }
 .btn-sm {
   background: var(--bg-panel); border: 1px solid var(--border);
   border-radius: 8px; padding: 6px 12px; color: var(--text-secondary);
-  font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 1px;
+  font-family: 'Cinzel', serif; font-size: 10px; font-weight: 500; letter-spacing: 1px;
 }
 
 /* === PROGRESS === */
@@ -92,15 +92,15 @@
 }
 .ms-header-content { flex: 1; }
 .ms-header-kicker {
-  font-family: 'Cinzel', serif; font-size: 8px;
-  letter-spacing: 4px; color: var(--gold); text-transform: uppercase;
+  font-family: 'Cinzel', serif; font-size: 9px; font-weight: 500;
+  letter-spacing: 3px; color: var(--gold); text-transform: uppercase;
 }
 .ms-header-title {
   font-family: 'Cormorant Garamond', serif;
-  font-size: 20px; font-weight: 300; font-style: italic; color: var(--text-primary);
+  font-size: 20px; font-weight: 400; font-style: italic; color: var(--text-primary);
 }
 .ms-header-home {
-  color: var(--text-muted); font-size: 13px;
+  color: var(--text-muted); font-size: 13px; font-weight: 500;
   font-family: 'Cinzel', serif; letter-spacing: 1px;
 }
 
@@ -117,7 +117,7 @@
 }
 .ms-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
 .ms-tab-label {
-  font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 2px;
+  font-family: 'Cinzel', serif; font-size: 9px; font-weight: 500; letter-spacing: 2px;
 }
 
 /* === TASK SUB-NAV === */
@@ -128,7 +128,7 @@
 .task-subnav-btn {
   padding: 7px 4px; background: var(--bg-panel);
   border-radius: 8px; color: var(--text-muted);
-  font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 1px;
+  font-family: 'Cinzel', serif; font-size: 9px; font-weight: 500; letter-spacing: 1px;
   text-transform: uppercase; transition: color 0.15s, background 0.15s;
 }
 .task-subnav-btn.active { color: var(--gold); background: rgba(232,196,106,0.1); }
@@ -195,7 +195,7 @@
 .note-chips { display: flex; gap: 8px; flex-wrap: wrap; }
 .note-chip {
   padding: 6px 14px; border-radius: var(--radius-pill);
-  font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 1px;
+  font-family: 'Cinzel', serif; font-size: 9px; font-weight: 500; letter-spacing: 1px;
   text-transform: uppercase; border: 1px solid var(--border);
   color: var(--text-muted); background: var(--bg-panel);
   transition: all 0.15s;
@@ -221,7 +221,7 @@
 .prayer-toggle { display: flex; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
 .prayer-toggle-btn {
   flex: 1; padding: 10px; font-family: 'Cinzel', serif;
-  font-size: 9px; letter-spacing: 2px; color: var(--text-muted);
+  font-size: 9px; font-weight: 500; letter-spacing: 2px; color: var(--text-muted);
   background: var(--bg-panel); transition: all 0.15s;
 }
 .prayer-toggle-btn.active { color: var(--gold); background: rgba(232,196,106,0.1); }
