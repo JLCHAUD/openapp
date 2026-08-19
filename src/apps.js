@@ -15,11 +15,10 @@ export const apps = [
     soon: true,
   },
   {
-    id: 'scores',
-    label: 'Scores',
-    icon: '◈',
+    id: 'ludo',
+    label: 'Ludo',
+    icon: '⚄',
     color: '#a89cf8',
-    component: null,
-    soon: true,
+    component: () => import('./apps/Ludo/index.jsx'),
   },
 ]
