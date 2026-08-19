@@ -1,15 +1,18 @@
-import { useState, lazy, Suspense } from 'react'
-import { useLocalStorage } from './hooks/useLocalStorage.js'
+import { useState, useEffect, lazy, Suspense } from 'react'
+import { useCloudState } from './hooks/useCloudState.js'
+import { useAuth } from './hooks/useAuth.js'
+import { useAudioRecorder } from './hooks/useAudioRecorder.js'
 import { initBibleState, initTasksState, initNotesState } from './tokens.js'
 import { Header } from './components/Header.jsx'
 import { TabBar } from './components/TabBar.jsx'
+import { listRecordings } from './lib/audioStore.js'
+import { pullTranscripts } from './lib/syncClient.js'
+import { createNotesForDone } from './lib/dictationSync.js'
 import './MySanctuary.css'
 
 const Bi1Home    = lazy(() => import('./screens/bible/Bi1Home.jsx').then(m => ({ default: m.Bi1Home })))
-const Bi2Map     = lazy(() => import('./screens/bible/Bi2Map.jsx').then(m => ({ default: m.Bi2Map })))
 const Bi3Book    = lazy(() => import('./screens/bible/Bi3Book.jsx').then(m => ({ default: m.Bi3Book })))
 const Bi4Verses  = lazy(() => import('./screens/bible/Bi4Verses.jsx').then(m => ({ default: m.Bi4Verses })))
-const Bi5Plans   = lazy(() => import('./screens/bible/Bi5Plans.jsx').then(m => ({ default: m.Bi5Plans })))
 const T1Focus    = lazy(() => import('./screens/tasks/T1Focus.jsx').then(m => ({ default: m.T1Focus })))
 const T2Habits   = lazy(() => import('./screens/tasks/T2Habits.jsx').then(m => ({ default: m.T2Habits })))
 const T3Deadlines= lazy(() => import('./screens/tasks/T3Deadlines.jsx').then(m => ({ default: m.T3Deadlines })))
@@ -19,20 +22,16 @@ const N2Prayer   = lazy(() => import('./screens/notes/N2Prayer.jsx').then(m => (
 const N3Dictee   = lazy(() => import('./screens/notes/N3Dictee.jsx').then(m => ({ default: m.N3Dictee })))
 
 const BACK_MAP = {
-  Bi2Map:    { screen: 'Bi1Home', params: {} },
-  Bi3Book:   { screen: 'Bi2Map',  params: {} },
+  Bi3Book:   { screen: 'Bi1Home', params: {} },
   Bi4Verses: (params) => ({ screen: 'Bi3Book', params: { bookId: params.bookId, bookName: params.bookName } }),
-  Bi5Plans:  { screen: 'Bi1Home', params: {} },
   N2Prayer:  { screen: 'N1Notes', params: {} },
-  N3Dictee:  { screen: 'N1Notes', params: {} },
 }
 
 const SCREEN_TITLES = {
   Bi1Home: 'Bible',
-  Bi2Map: 'Carte de lecture',
-  Bi5Plans: 'Mes plans',
   N2Prayer: 'Carnet de prière',
   N3Dictee: 'Dictée vocale',
+  N1Notes: 'Notes',
 }
 
 export default function MySanctuary({ onBack }) {
@@ -40,9 +39,36 @@ export default function MySanctuary({ onBack }) {
   const [nav, setNav] = useState({ screen: 'Bi1Home', params: {} })
   const [activeTaskView, setActiveTaskView] = useState('T1Focus')
 
-  const [bible, setBible] = useLocalStorage('ms_bible', initBibleState())
-  const [tasks, setTasks] = useLocalStorage('ms_tasks', initTasksState())
-  const [notes, setNotes] = useLocalStorage('ms_notes', initNotesState())
+  const [bible, setBible] = useCloudState('ms_bible', initBibleState())
+  const [tasks, setTasks] = useCloudState('ms_tasks', initTasksState())
+  const [notes, setNotes] = useCloudState('ms_notes', initNotesState())
+
+  // L'enregistreur vit ici (racine de l'app), pas dans l'écran Dictée : ainsi
+  // l'enregistrement continue en arrière-plan si on change d'onglet en cours de dictée.
+  const recorder = useAudioRecorder()
+
+  // Récupère les transcriptions terminées et les convertit en notes, quel que
+  // soit l'onglet actif — pour ne pas dépendre du fait de revenir sur "Enr".
+  const { session } = useAuth()
+  useEffect(() => {
+    if (!session) return
+    let cancelled = false
+    let running = false // évite deux tick() qui se chevauchent (ex. requête réseau lente)
+    async function tick() {
+      if (running) return
+      running = true
+      try {
+        await pullTranscripts(await listRecordings())
+        if (!cancelled) await createNotesForDone(setNotes)
+      } finally {
+        running = false
+      }
+    }
+    tick()
+    const iv = setInterval(tick, 10000)
+    return () => { cancelled = true; clearInterval(iv) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session])
 
   function navigate(screen, params = {}) { setNav({ screen, params }) }
 
@@ -52,13 +78,15 @@ export default function MySanctuary({ onBack }) {
     setNav(typeof entry === 'function' ? entry(nav.params) : entry)
   }
 
-  const isSecondary = activeTab !== 'tasks' && !['Bi1Home', 'N1Notes'].includes(nav.screen)
+  const isSecondary = activeTab !== 'tasks' && !['Bi1Home', 'N1Notes', 'N2Prayer', 'N3Dictee'].includes(nav.screen)
+  const isBiHome = activeTab === 'bible' && nav.screen === 'Bi1Home'
 
   function headerTitle() {
     if (activeTab === 'tasks') return 'Tâches'
+    if (activeTab === 'enr') return 'Dictée vocale'
     if (nav.screen === 'Bi3Book') return nav.params.bookName || 'Livre'
     if (nav.screen === 'Bi4Verses') return `${nav.params.bookName || ''} ${nav.params.chapterNum || ''}`.trim()
-    return SCREEN_TITLES[nav.screen] || 'Mon Sanctuaire'
+    return SCREEN_TITLES[nav.screen] || 'Bible'
   }
 
   const screenProps = { bible, setBible, tasks, setTasks, notes, setNotes, navigate }
@@ -67,11 +95,12 @@ export default function MySanctuary({ onBack }) {
     setActiveTab(tab)
     if (tab === 'bible') setNav({ screen: 'Bi1Home', params: {} })
     if (tab === 'notes') setNav({ screen: 'N1Notes', params: {} })
+    if (tab === 'enr') setNav({ screen: 'N3Dictee', params: {} })
   }
 
   function renderContent() {
     if (activeTab === 'bible') {
-      const screens = { Bi1Home, Bi2Map, Bi3Book, Bi4Verses, Bi5Plans }
+      const screens = { Bi1Home, Bi3Book, Bi4Verses }
       const Screen = screens[nav.screen]
       return Screen ? <Screen {...screenProps} params={nav.params} /> : null
     }
@@ -92,18 +121,33 @@ export default function MySanctuary({ onBack }) {
       )
     }
     if (activeTab === 'notes') {
-      const screens = { N1Notes, N2Prayer, N3Dictee }
-      const Screen = screens[nav.screen] || N1Notes
-      return <Screen {...screenProps} params={nav.params} />
+      const screens = { N1Notes, N2Prayer }
+      const current = screens[nav.screen] ? nav.screen : 'N1Notes'
+      const Screen = screens[current]
+      return (
+        <>
+          <div className="task-subnav" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+            {[['N1Notes','Notes'],['N2Prayer','Prière']].map(([id, label]) => (
+              <button key={id}
+                className={`task-subnav-btn${current === id ? ' active' : ''}`}
+                onClick={() => navigate(id, {})}>{label}</button>
+            ))}
+          </div>
+          <Screen {...screenProps} params={nav.params} />
+        </>
+      )
+    }
+    if (activeTab === 'enr') {
+      return <N3Dictee {...screenProps} recorder={recorder} params={nav.params} />
     }
   }
 
   return (
     <div className="ms-root">
-      <Header kicker="MON SANCTUAIRE" title={headerTitle()}
+      <Header kicker="My Sanctuary" title={headerTitle()}
         isSecondary={isSecondary} onBack={goBack} onHome={onBack} />
-      <TabBar activeTab={activeTab} onChange={handleTabChange} />
-      <main className="ms-main">
+      <TabBar activeTab={activeTab} onChange={handleTabChange} isRecording={recorder.isRecording} />
+      <main className={`ms-main${isBiHome ? ' ms-main--fill' : ''}`}>
         <Suspense fallback={null}>
           {renderContent()}
         </Suspense>

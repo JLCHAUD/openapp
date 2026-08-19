@@ -85,6 +85,15 @@ export const BIBLE_BOOKS = [
   { id: 66, nom: 'Apocalypse',            abr: 'Ap',  testament: 'NT', totalChapitres: 22  },
 ]
 
+export const NOTE_TYPES = [
+  { id: 'réflexion',    label: 'Réflexion',    color: '#e8c46a' },
+  { id: 'prière',       label: 'Prière',       color: '#a89cf8' },
+  { id: 'gratitude',    label: 'Gratitude',    color: '#4caf82' },
+  { id: 'prophétie',    label: 'Prophétie',    color: '#e8c46a' },
+  { id: 'sermon',       label: 'Sermon',       color: '#a0a0b8' },
+  { id: 'amélioration', label: 'Amélioration', color: '#60b8ff' },
+]
+
 export function heatColor(percent) {
   if (percent === 0)   return '#1e1e2e'
   if (percent < 25)   return '#4a3a1e'

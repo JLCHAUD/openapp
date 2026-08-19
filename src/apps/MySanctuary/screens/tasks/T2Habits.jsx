@@ -46,8 +46,8 @@ export function T2Habits({ tasks, setTasks }) {
   return (
     <>
       {/* En-tête jours */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr repeat(7, 24px)',
-        gap: 6, alignItems: 'center', padding: '0 16px', marginBottom: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1.6fr repeat(7, 1fr)',
+        gap: 4, alignItems: 'center', padding: '0 16px', marginBottom: 8 }}>
         <span />
         {DAYS.map((d, i) => (
           <span key={i} style={{ fontFamily: 'Cinzel', fontSize: 9,
@@ -57,8 +57,8 @@ export function T2Habits({ tasks, setTasks }) {
 
       {habits.map(habit => (
         <div key={habit.id} className="card" style={{ marginBottom: 8, padding: '12px 16px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr repeat(7, 24px)',
-            gap: 6, alignItems: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1.6fr repeat(7, 1fr)',
+            gap: 4, alignItems: 'center' }}>
             <span style={{ fontSize: 14, color: '#f0ece0' }}>{habit.nom}</span>
             {week.map((dateStr, i) => {
               const done = habit.joursFaits.includes(dateStr)

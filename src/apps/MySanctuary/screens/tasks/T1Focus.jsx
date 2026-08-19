@@ -11,6 +11,7 @@ export function T1Focus({ tasks, setTasks }) {
   const [expanded, setExpanded] = useState(null)
   const [addingSlot, setAddingSlot] = useState(null)
   const [newTask, setNewTask] = useState('')
+  const [editingId, setEditingId] = useState(null)
 
   const allTasks = tasks.tasks
   const priorities = [1, 2, 3].map(p => allTasks.find(t => t.priorite === p) ?? null)
@@ -18,6 +19,11 @@ export function T1Focus({ tasks, setTasks }) {
 
   function updateTask(updated) {
     setTasks(prev => ({ ...prev, tasks: prev.tasks.map(t => t.id === updated.id ? updated : t) }))
+  }
+
+  function saveTitle(task, newTitre) {
+    if (newTitre.trim()) updateTask({ ...task, titre: newTitre.trim() })
+    setEditingId(null)
   }
 
   function addPriority(titre, slot) {
@@ -67,7 +73,25 @@ export function T1Focus({ tasks, setTasks }) {
               <span style={{ fontFamily: 'Cormorant Garamond', fontSize: 36,
                 color: '#e8c46a', lineHeight: 1, minWidth: 24 }}>{i + 1}</span>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 15, color: '#f0ece0', marginBottom: 4 }}>{task.titre}</div>
+                {editingId === task.id ? (
+                  <input
+                    autoFocus
+                    defaultValue={task.titre}
+                    style={{ background: 'transparent', border: 'none', outline: 'none',
+                      borderBottom: '1px solid #e8c46a', color: '#f0ece0', fontSize: 15,
+                      width: '100%', paddingBottom: 2 }}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') saveTitle(task, e.target.value)
+                      if (e.key === 'Escape') setEditingId(null)
+                    }}
+                    onBlur={e => saveTitle(task, e.target.value)}
+                  />
+                ) : (
+                  <div style={{ fontSize: 15, color: '#f0ece0', marginBottom: 4, cursor: 'text' }}
+                    onClick={() => setEditingId(task.id)}>
+                    {task.titre}
+                  </div>
+                )}
                 {task.sousTaches.length > 0 && (
                   <div style={{ fontSize: 11, color: '#a0a0b8' }}>
                     {task.sousTaches.filter(s => s.done).length}/{task.sousTaches.length} sous-tâches
@@ -112,7 +136,24 @@ export function T1Focus({ tasks, setTasks }) {
             <div key={task.id} style={{ display: 'flex', alignItems: 'center',
               gap: 12, padding: '10px 0', borderBottom: '1px solid #3a3a55' }}>
               <div style={{ width: 10, height: 10, borderRadius: '50%', border: '1.5px solid #6a6a82', flexShrink: 0 }} />
-              <span style={{ flex: 1, fontSize: 14, color: '#a0a0b8' }}>{task.titre}</span>
+              {editingId === task.id ? (
+                <input
+                  autoFocus
+                  defaultValue={task.titre}
+                  style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none',
+                    borderBottom: '1px solid #5a5a82', color: '#a0a0b8', fontSize: 14 }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') saveTitle(task, e.target.value)
+                    if (e.key === 'Escape') setEditingId(null)
+                  }}
+                  onBlur={e => saveTitle(task, e.target.value)}
+                />
+              ) : (
+                <span style={{ flex: 1, fontSize: 14, color: '#a0a0b8', cursor: 'text' }}
+                  onClick={() => setEditingId(task.id)}>
+                  {task.titre}
+                </span>
+              )}
               <button className="btn-sm" onClick={() => promote(task.id)}>↑ Priorité</button>
             </div>
           ))}

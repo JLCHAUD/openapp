@@ -1,4 +1,7 @@
-export function Bi3Book({ bible, navigate, params }) {
+import { todayISO, calcStreak } from '../../tokens.js'
+import { useTapHold } from '../../hooks/useTapHold.js'
+
+export function Bi3Book({ bible, setBible, navigate, params }) {
   const book = bible.books.find(b => b.id === params.bookId)
   if (!book) return <div style={{ color: '#6a6a82', textAlign: 'center' }}>Livre introuvable</div>
 
@@ -13,6 +16,38 @@ export function Bi3Book({ bible, navigate, params }) {
     if (book.chapitresLus.includes(ch)) return 'read'
     if (ch === enCours && chapitresLus < total) return 'current'
     return 'unread'
+  }
+
+  // Bascule lu / non-lu : un appui court sur un chapitre déjà lu annule le marquage.
+  function toggleLu(ch) {
+    const today = todayISO()
+    setBible(prev => {
+      const target = prev.books.find(b => b.id === book.id)
+      if (!target) return prev
+
+      if (target.chapitresLus.includes(ch)) {
+        // Annuler : repasse le chapitre en non-lu
+        const updatedBooks = prev.books.map(b =>
+          b.id === book.id ? { ...b, chapitresLus: b.chapitresLus.filter(c => c !== ch) } : b
+        )
+        const updatedPlans = prev.plans.map(p =>
+          p.livreId === book.id && p.statut === 'termine' ? { ...p, statut: 'cours' } : p
+        )
+        return { ...prev, books: updatedBooks, plans: updatedPlans }
+      }
+
+      const newStreak = prev.lastReadDate === today
+        ? prev.streak
+        : calcStreak(prev.lastReadDate, prev.streak)
+      const updatedBooks = prev.books.map(b =>
+        b.id === book.id ? { ...b, chapitresLus: [...b.chapitresLus, ch] } : b
+      )
+      const estTermine = target.chapitresLus.length + 1 === target.totalChapitres
+      const updatedPlans = estTermine
+        ? prev.plans.map(p => p.livreId === book.id ? { ...p, statut: 'termine' } : p)
+        : prev.plans
+      return { ...prev, books: updatedBooks, plans: updatedPlans, streak: newStreak, lastReadDate: today }
+    })
   }
 
   return (
@@ -30,18 +65,15 @@ export function Bi3Book({ bible, navigate, params }) {
 
       <div className="card">
         <div className="chapter-grid">
-          {chapters.map(ch => {
-            const status = getStatus(ch)
-            return (
-              <div key={ch} className={`chapter-square ${status}`}
-                onClick={() => navigate('Bi4Verses', {
-                  bookId: book.id, bookName: book.nom,
-                  chapterNum: ch, totalVersets: estimateVerses(book.id, ch)
-                })}>
-                {ch}
-              </div>
-            )
-          })}
+          {chapters.map(ch => (
+            <ChapterSquare key={ch} ch={ch} status={getStatus(ch)}
+              bookId={book.id} bookName={book.nom}
+              onShort={() => toggleLu(ch)}
+              onLong={() => navigate('Bi4Verses', {
+                bookId: book.id, bookName: book.nom,
+                chapterNum: ch, totalVersets: 26
+              })} />
+          ))}
         </div>
       </div>
 
@@ -56,13 +88,21 @@ export function Bi3Book({ bible, navigate, params }) {
       </div>
 
       <div style={{ fontSize: 12, color: '#6a6a82', textAlign: 'center' }}>
-        Touche un chapitre pour suivre tes versets
+        Appui court → marquer lu / annuler · Appui long → ouvrir le chapitre
       </div>
     </>
   )
 }
 
-// Estimation simple : moyenne de 26 versets par chapitre
-function estimateVerses(bookId, chapterNum) {
-  return 26
+function ChapterSquare({ ch, status, onShort, onLong }) {
+  const handlers = useTapHold(onShort, onLong)
+
+  return (
+    <div
+      className={`chapter-square ${status}`}
+      {...handlers}
+    >
+      {ch}
+    </div>
+  )
 }
